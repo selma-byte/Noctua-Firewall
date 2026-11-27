@@ -16,6 +16,27 @@ def load_rules(path):
     return [check_rule(r, n) for n, r in enumerate(data["rules"], start=1)]
 
 
+def parse_port(value, number):
+    """A single port comes back as an int, a range as the text 'low-high'."""
+    text = str(value)
+    if "-" in text:
+        low_text, _, high_text = text.partition("-")
+        try:
+            low, high = int(low_text), int(high_text)
+        except ValueError:
+            raise RuleError(f"rule {number}: bad port range {text!r}")
+        if not 1 <= low <= high <= 65535:
+            raise RuleError(f"rule {number}: port range {text} is not valid")
+        return f"{low}-{high}"
+    try:
+        port = int(text)
+    except ValueError:
+        raise RuleError(f"rule {number}: bad port {text!r}")
+    if not 1 <= port <= 65535:
+        raise RuleError(f"rule {number}: port {port} is out of range")
+    return port
+
+
 def check_rule(rule, number):
     if rule.get("action") not in VALID_ACTIONS:
         raise RuleError(f"rule {number}: action must be allow or deny")
@@ -28,12 +49,11 @@ def check_rule(rule, number):
     if port is not None:
         if proto == "icmp":
             raise RuleError(f"rule {number}: icmp has no ports")
-        if not 1 <= int(port) <= 65535:
-            raise RuleError(f"rule {number}: port {port} is out of range")
+        port = parse_port(port, number)
 
     return {
         "action": rule["action"],
         "protocol": proto,
-        "port": int(port) if port is not None else None,
+        "port": port,
         "source": rule.get("source", "any"),
     }
