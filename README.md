@@ -1,4 +1,3 @@
-$text = @'
 # Noctua-Firewall
 
 [![tests](https://github.com/selma-byte/Noctua-Firewall/actions/workflows/tests.yml/badge.svg)](https://github.com/selma-byte/Noctua-Firewall/actions/workflows/tests.yml)
@@ -37,6 +36,7 @@ rules:
   - action: deny
     protocol: tcp
     port: 23
+    log: true
 ~~~
 
 | Field    | Values                                                  | Default  |
@@ -45,6 +45,7 @@ rules:
 | protocol | `tcp`, `udp`, `icmp`                                    | `tcp`    |
 | port     | 1 to 65535, or a range like `8000-8100` (not for icmp)  | any      |
 | source   | an IPv4 address or network, or `any`                    | `any`    |
+| log      | `true` to record matching packets in the system log     | `false`  |
 
 A port range must go from the lower number to the higher one, so `9000-8000`
 is refused. Bad rules are refused with the rule number in the message.
@@ -82,11 +83,18 @@ noctua apply examples/rules.yml --yes
 - `apply` is a dry run unless `--yes` is given, and the ruleset goes through
   `nft -c` first, so a broken ruleset is never loaded.
 
+## Logging
+
+A rule with `log: true` writes a line starting with `noctua:` to the kernel
+log whenever it matches, before the packet is accepted or dropped. On Linux
+you can read it with `journalctl -k` or `dmesg`. A busy rule can fill the
+logs quickly, so use it on rules you care about.
+
 ## Limits
 
 - Incoming traffic only (the input chain).
 - IPv4 source addresses only.
-- No logging yet.
+- Logging is per rule. Packets dropped by the default policy are not logged.
 
 ## Be careful with apply
 
@@ -104,5 +112,3 @@ python -m pytest
 ## License
 
 MIT
-'@
-[System.IO.File]::WriteAllText("$PWD\README.md", $text, (New-Object System.Text.UTF8Encoding($false)))
