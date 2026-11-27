@@ -5,6 +5,10 @@ rules:
     source: 192.168.1.0/24
   - action: allow
     protocol: tcp
+    port: 22
+    source: "2001:db8::/32"
+  - action: allow
+    protocol: tcp
     port: 443
   - action: allow
     protocol: icmp
