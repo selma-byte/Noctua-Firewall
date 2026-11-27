@@ -4,6 +4,7 @@ import yaml
 
 VALID_ACTIONS = {"allow", "deny"}
 VALID_PROTOCOLS = {"tcp", "udp", "icmp"}
+VALID_DIRECTIONS = {"in", "out"}
 
 
 class RuleError(ValueError):
@@ -39,7 +40,7 @@ def parse_port(value, number):
     return port
 
 
-def parse_source(value, number):
+def parse_address(value, number):
     """'any', or an IPv4 or IPv6 address or network."""
     if value == "any":
         return "any"
@@ -53,6 +54,14 @@ def parse_source(value, number):
 def check_rule(rule, number):
     if rule.get("action") not in VALID_ACTIONS:
         raise RuleError(f"rule {number}: action must be allow or deny")
+
+    direction = rule.get("direction", "in")
+    if direction not in VALID_DIRECTIONS:
+        raise RuleError(f"rule {number}: direction must be in or out")
+    if direction == "in" and "destination" in rule:
+        raise RuleError(f"rule {number}: incoming rules use source, not destination")
+    if direction == "out" and "source" in rule:
+        raise RuleError(f"rule {number}: outgoing rules use destination, not source")
 
     proto = rule.get("protocol", "tcp")
     if proto not in VALID_PROTOCOLS:
@@ -70,8 +79,10 @@ def check_rule(rule, number):
 
     return {
         "action": rule["action"],
+        "direction": direction,
         "protocol": proto,
         "port": port,
-        "source": parse_source(rule.get("source", "any"), number),
+        "source": parse_address(rule.get("source", "any"), number),
+        "destination": parse_address(rule.get("destination", "any"), number),
         "log": log,
     }
