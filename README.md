@@ -5,7 +5,8 @@
 Named after the little owl, a night watcher.
 
 Noctua reads firewall rules from a YAML file, checks them, and turns them
-into an nftables ruleset. Anything the rules don't mention is dropped.
+into an nftables ruleset. Incoming traffic that the rules don't mention is
+dropped.
 
 ## Install
 
@@ -38,27 +39,49 @@ rules:
     protocol: tcp
     port: 23
     log: true
+  - action: deny
+    direction: out
+    protocol: tcp
+    port: 6667
+    log: true
 ~~~
 
-| Field    | Values                                                  | Default  |
-|----------|---------------------------------------------------------|----------|
-| action   | `allow` or `deny`                                       | required |
-| protocol | `tcp`, `udp`, `icmp`                                    | `tcp`    |
-| port     | 1 to 65535, or a range like `8000-8100` (not for icmp)  | any      |
-| source   | an IPv4 or IPv6 address or network, or `any`            | `any`    |
-| log      | `true` to record matching packets in the system log     | `false`  |
+| Field       | Values                                                  | Default  |
+|-------------|---------------------------------------------------------|----------|
+| action      | `allow` or `deny`                                       | required |
+| direction   | `in` or `out`                                           | `in`     |
+| protocol    | `tcp`, `udp`, `icmp`                                    | `tcp`    |
+| port        | 1 to 65535, or a range like `8000-8100` (not for icmp)  | any      |
+| source      | IPv4 or IPv6 address or network, or `any` (`in` rules)  | `any`    |
+| destination | IPv4 or IPv6 address or network, or `any` (`out` rules) | `any`    |
+| log         | `true` to record matching packets in the system log     | `false`  |
+
+An incoming rule uses `source` and an outgoing rule uses `destination`. Mixing
+them up is refused. The port is always the destination port, so on an outgoing
+rule it is the port of the remote service.
 
 A port range must go from the lower number to the higher one, so `9000-8000`
-is refused. A source that is not a valid address or network is refused too.
-Bad rules are refused with the rule number in the message.
+is refused. A source or destination that is not a valid address or network is
+refused too. Bad rules are refused with the rule number in the message.
 
 ## IPv6
 
 Put IPv6 addresses in quotes, because YAML can misread the colons.
-IPv4 sources become `ip saddr` and IPv6 sources become `ip6 saddr`.
+IPv4 addresses become `ip saddr` or `ip daddr` and IPv6 addresses become
+`ip6 saddr` or `ip6 daddr`.
 
-An `icmp` rule means ICMP for IPv4 and ICMPv6 for IPv6. With source `any` it
+An `icmp` rule means ICMP for IPv4 and ICMPv6 for IPv6. With no address it
 covers both, which matters because IPv6 stops working if ICMPv6 is blocked.
+
+## Incoming and outgoing
+
+The generated table has two chains.
+
+- `input` has the policy `drop`. Only what the rules allow gets in, plus
+  replies to connections the machine started and local traffic.
+- `output` has the policy `accept`, so the machine keeps working with no
+  rules at all. Outgoing rules are mostly `deny`, for example to block a port
+  or a network. An `allow` placed before a `deny` works as an exception.
 
 ## Commands
 
@@ -72,6 +95,7 @@ Ask what would happen to one packet:
 
 ~~~
 noctua test examples/rules.yml --proto tcp --port 22 --src 192.168.1.20
+noctua test examples/rules.yml --direction out --proto tcp --port 6667 --dst 203.0.113.9
 ~~~
 
 Load the rules (Linux, root, nftables installed). Without `--yes` it only
@@ -84,12 +108,13 @@ noctua apply examples/rules.yml --yes
 
 ## How it decides
 
-- Rules are read from top to bottom and the first match wins.
-- If nothing matches, the packet is dropped. The generated chain has
-  `policy drop`.
+- Rules are read from top to bottom and the first match wins. Only rules that
+  go the same way as the packet are looked at.
+- If nothing matches, incoming packets are dropped and outgoing packets are
+  allowed.
 - Replies to connections the machine started are allowed
   (`ct state established,related`), otherwise its own web browsing would break.
-- Local traffic on the loopback interface is allowed.
+- Local traffic on the loopback interface is allowed in both directions.
 - `apply` is a dry run unless `--yes` is given, and the ruleset goes through
   `nft -c` first, so a broken ruleset is never loaded.
 
@@ -102,8 +127,8 @@ logs quickly, so use it on rules you care about.
 
 ## Limits
 
-- Incoming traffic only (the input chain).
-- Logging is per rule. Packets dropped by the default policy are not logged.
+- Traffic that is not matched by any rule is not logged.
+- No forwarding chain, so it is meant for a single machine and not a router.
 
 ## Be careful with apply
 
