@@ -1,3 +1,4 @@
+$text = @'
 # Noctua-Firewall
 
 [![tests](https://github.com/selma-byte/Noctua-Firewall/actions/workflows/tests.yml/badge.svg)](https://github.com/selma-byte/Noctua-Firewall/actions/workflows/tests.yml)
@@ -30,19 +31,23 @@ rules:
   - action: allow
     protocol: tcp
     port: 443
+  - action: allow
+    protocol: tcp
+    port: 8000-8100
   - action: deny
     protocol: tcp
     port: 23
 ~~~
 
-| Field    | Values                                | Default  |
-|----------|---------------------------------------|----------|
-| action   | `allow` or `deny`                     | required |
-| protocol | `tcp`, `udp`, `icmp`                  | `tcp`    |
-| port     | 1 to 65535 (not for icmp)             | any      |
-| source   | an IPv4 address or network, or `any`  | `any`    |
+| Field    | Values                                                  | Default  |
+|----------|---------------------------------------------------------|----------|
+| action   | `allow` or `deny`                                       | required |
+| protocol | `tcp`, `udp`, `icmp`                                    | `tcp`    |
+| port     | 1 to 65535, or a range like `8000-8100` (not for icmp)  | any      |
+| source   | an IPv4 address or network, or `any`                    | `any`    |
 
-Bad rules are refused with the rule number in the message.
+A port range must go from the lower number to the higher one, so `9000-8000`
+is refused. Bad rules are refused with the rule number in the message.
 
 ## Commands
 
@@ -99,3 +104,5 @@ python -m pytest
 ## License
 
 MIT
+'@
+[System.IO.File]::WriteAllText("$PWD\README.md", $text, (New-Object System.Text.UTF8Encoding($false)))

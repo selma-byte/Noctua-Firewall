@@ -11,3 +11,6 @@ rules:
   - action: deny
     protocol: tcp
     port: 23
+  - action: allow
+    protocol: tcp
+    port: 8000-8100
