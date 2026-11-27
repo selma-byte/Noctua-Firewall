@@ -11,6 +11,7 @@ rules:
   - action: deny
     protocol: tcp
     port: 23
+    log: true
   - action: allow
     protocol: tcp
     port: 8000-8100
