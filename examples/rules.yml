@@ -19,3 +19,12 @@ rules:
   - action: allow
     protocol: tcp
     port: 8000-8100
+  - action: deny
+    direction: out
+    protocol: tcp
+    port: 6667
+    log: true
+  - action: deny
+    direction: out
+    protocol: tcp
+    destination: 203.0.113.0/24
