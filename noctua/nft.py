@@ -11,6 +11,9 @@ def rule_line(rule):
     else:
         parts.append(f"meta l4proto {proto}")
 
+    if rule.get("log"):
+        parts.append('log prefix "noctua: "')
+
     parts.append("accept" if rule["action"] == "allow" else "drop")
     return " ".join(parts)
 
