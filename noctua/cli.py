@@ -66,7 +66,10 @@ def main(argv=None):
         return 0
 
     text = HEADER + to_nft(rules)
-    if run_nft(["-c", "-f", "-"], text) != 0:
+    check = run_nft(["-c", "-f", "-"], text)
+    if check == 127:
+        return 127
+    if check != 0:
         print("noctua: nft rejected the ruleset, nothing was changed", file=sys.stderr)
         return 1
     return run_nft(["-f", "-"], text)
