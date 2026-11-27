@@ -45,3 +45,30 @@ def test_ipv4_rule_does_not_match_an_ipv6_packet():
     rules = [{"action": "allow", "protocol": "tcp", "port": 22, "source": "192.168.1.0/24"}]
     pkt = {"protocol": "tcp", "port": 22, "source": "2001:db8::5"}
     assert decide(rules, pkt) == "deny"
+
+
+def test_outgoing_deny_matches_an_outgoing_packet():
+    rules = [{"action": "deny", "direction": "out", "protocol": "tcp", "port": 6667,
+              "source": "any", "destination": "any"}]
+    pkt = {"direction": "out", "protocol": "tcp", "port": 6667, "destination": "203.0.113.9"}
+    assert decide(rules, pkt) == "deny"
+
+
+def test_outgoing_traffic_is_allowed_by_default():
+    pkt = {"direction": "out", "protocol": "tcp", "port": 80, "destination": "8.8.8.8"}
+    assert decide([], pkt) == "allow"
+
+
+def test_incoming_rule_ignores_outgoing_packets():
+    rules = [{"action": "deny", "protocol": "tcp", "port": 80, "source": "any"}]
+    pkt = {"direction": "out", "protocol": "tcp", "port": 80, "destination": "8.8.8.8"}
+    assert decide(rules, pkt) == "allow"
+
+
+def test_destination_network_is_checked():
+    rules = [{"action": "deny", "direction": "out", "protocol": "tcp", "port": None,
+              "source": "any", "destination": "203.0.113.0/24"}]
+    blocked = {"direction": "out", "protocol": "tcp", "port": 80, "destination": "203.0.113.9"}
+    free = {"direction": "out", "protocol": "tcp", "port": 80, "destination": "8.8.8.8"}
+    assert decide(rules, blocked) == "deny"
+    assert decide(rules, free) == "allow"
