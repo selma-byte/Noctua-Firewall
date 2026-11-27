@@ -20,9 +20,11 @@ def build_parser():
 
     test = sub.add_parser("test", help="see what happens to one packet")
     test.add_argument("rules_file")
+    test.add_argument("--direction", choices=["in", "out"], default="in")
     test.add_argument("--proto", default="tcp")
     test.add_argument("--port", type=int)
-    test.add_argument("--src", required=True)
+    test.add_argument("--src", help="source address, for incoming packets")
+    test.add_argument("--dst", help="destination address, for outgoing packets")
 
     apply_cmd = sub.add_parser("apply", help="load the rules (linux, root only)")
     apply_cmd.add_argument("rules_file")
@@ -56,7 +58,18 @@ def main(argv=None):
         return 0
 
     if args.command == "test":
-        packet = {"protocol": args.proto, "port": args.port, "source": args.src}
+        needed = args.src if args.direction == "in" else args.dst
+        if needed is None:
+            flag = "--src" if args.direction == "in" else "--dst"
+            print(f"noctua: {flag} is needed for {args.direction} packets", file=sys.stderr)
+            return 2
+        packet = {
+            "direction": args.direction,
+            "protocol": args.proto,
+            "port": args.port,
+            "source": args.src,
+            "destination": args.dst,
+        }
         print(decide(rules, packet))
         return 0
 
