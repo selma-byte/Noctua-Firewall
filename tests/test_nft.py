@@ -18,3 +18,7 @@ def test_icmp_has_no_port():
 
 def test_policy_is_drop():
     assert "policy drop" in to_nft([])
+
+def test_port_range_text():
+    rule = {"action": "allow", "protocol": "tcp", "port": "8000-8100", "source": "any"}
+    assert rule_line(rule) == "tcp dport 8000-8100 accept"

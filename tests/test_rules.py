@@ -17,3 +17,12 @@ def test_defaults_are_filled_in():
     rule = check_rule({"action": "deny"}, 1)
     assert rule["protocol"] == "tcp"
     assert rule["source"] == "any"
+
+def test_port_range_is_kept():
+    rule = check_rule({"action": "allow", "port": "8000-8100"}, 1)
+    assert rule["port"] == "8000-8100"
+
+
+def test_backwards_range_is_rejected():
+    with pytest.raises(RuleError):
+        check_rule({"action": "allow", "port": "9000-8000"}, 1)

@@ -25,3 +25,10 @@ def test_ping_is_allowed():
 def test_unlisted_traffic_falls_to_deny():
     pkt = {"protocol": "udp", "port": 5000, "source": "10.0.0.2"}
     assert decide(RULES, pkt) == "deny"
+
+def test_port_range_matches_inside_but_not_outside():
+    rules = [{"action": "allow", "protocol": "tcp", "port": "8000-8100", "source": "any"}]
+    inside = {"protocol": "tcp", "port": 8050, "source": "1.2.3.4"}
+    outside = {"protocol": "tcp", "port": 8101, "source": "1.2.3.4"}
+    assert decide(rules, inside) == "allow"
+    assert decide(rules, outside) == "deny"
