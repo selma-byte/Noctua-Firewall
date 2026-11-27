@@ -18,6 +18,7 @@ def test_defaults_are_filled_in():
     assert rule["protocol"] == "tcp"
     assert rule["source"] == "any"
 
+
 def test_port_range_is_kept():
     rule = check_rule({"action": "allow", "port": "8000-8100"}, 1)
     assert rule["port"] == "8000-8100"
@@ -27,6 +28,7 @@ def test_backwards_range_is_rejected():
     with pytest.raises(RuleError):
         check_rule({"action": "allow", "port": "9000-8000"}, 1)
 
+
 def test_log_must_be_true_or_false():
     with pytest.raises(RuleError):
         check_rule({"action": "deny", "log": "yes please"}, 1)
@@ -34,3 +36,13 @@ def test_log_must_be_true_or_false():
 
 def test_log_defaults_to_off():
     assert check_rule({"action": "deny"}, 1)["log"] is False
+
+
+def test_ipv6_network_is_accepted():
+    rule = check_rule({"action": "allow", "source": "2001:db8::/32"}, 1)
+    assert rule["source"] == "2001:db8::/32"
+
+
+def test_bad_source_is_rejected():
+    with pytest.raises(RuleError):
+        check_rule({"action": "allow", "source": "192.168.1.0/99"}, 1)

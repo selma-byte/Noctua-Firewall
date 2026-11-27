@@ -1,3 +1,5 @@
+import ipaddress
+
 import yaml
 
 VALID_ACTIONS = {"allow", "deny"}
@@ -37,6 +39,17 @@ def parse_port(value, number):
     return port
 
 
+def parse_source(value, number):
+    """'any', or an IPv4 or IPv6 address or network."""
+    if value == "any":
+        return "any"
+    try:
+        ipaddress.ip_network(str(value), strict=False)
+    except ValueError:
+        raise RuleError(f"rule {number}: {value!r} is not an ip address or network")
+    return str(value)
+
+
 def check_rule(rule, number):
     if rule.get("action") not in VALID_ACTIONS:
         raise RuleError(f"rule {number}: action must be allow or deny")
@@ -59,6 +72,6 @@ def check_rule(rule, number):
         "action": rule["action"],
         "protocol": proto,
         "port": port,
-        "source": rule.get("source", "any"),
+        "source": parse_source(rule.get("source", "any"), number),
         "log": log,
     }

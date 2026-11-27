@@ -1,11 +1,29 @@
+import ipaddress
+
+
+def family(source):
+    """4 or 6 for an address or network, None for 'any'."""
+    if source == "any":
+        return None
+    return ipaddress.ip_network(source, strict=False).version
+
+
 def rule_line(rule):
     parts = []
-    if rule["source"] != "any":
+    version = family(rule["source"])
+    if version == 4:
         parts.append(f"ip saddr {rule['source']}")
+    elif version == 6:
+        parts.append(f"ip6 saddr {rule['source']}")
 
     proto = rule["protocol"]
     if proto == "icmp":
-        parts.append("meta l4proto icmp")
+        if version == 4:
+            parts.append("meta l4proto icmp")
+        elif version == 6:
+            parts.append("meta l4proto ipv6-icmp")
+        else:
+            parts.append("meta l4proto { icmp, ipv6-icmp }")
     elif rule["port"] is not None:
         parts.append(f"{proto} dport {rule['port']}")
     else:

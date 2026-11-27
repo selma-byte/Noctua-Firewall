@@ -29,7 +29,8 @@ rules:
     source: 192.168.1.0/24
   - action: allow
     protocol: tcp
-    port: 443
+    port: 22
+    source: "2001:db8::/32"
   - action: allow
     protocol: tcp
     port: 8000-8100
@@ -44,11 +45,20 @@ rules:
 | action   | `allow` or `deny`                                       | required |
 | protocol | `tcp`, `udp`, `icmp`                                    | `tcp`    |
 | port     | 1 to 65535, or a range like `8000-8100` (not for icmp)  | any      |
-| source   | an IPv4 address or network, or `any`                    | `any`    |
+| source   | an IPv4 or IPv6 address or network, or `any`            | `any`    |
 | log      | `true` to record matching packets in the system log     | `false`  |
 
 A port range must go from the lower number to the higher one, so `9000-8000`
-is refused. Bad rules are refused with the rule number in the message.
+is refused. A source that is not a valid address or network is refused too.
+Bad rules are refused with the rule number in the message.
+
+## IPv6
+
+Put IPv6 addresses in quotes, because YAML can misread the colons.
+IPv4 sources become `ip saddr` and IPv6 sources become `ip6 saddr`.
+
+An `icmp` rule means ICMP for IPv4 and ICMPv6 for IPv6. With source `any` it
+covers both, which matters because IPv6 stops working if ICMPv6 is blocked.
 
 ## Commands
 
@@ -93,7 +103,6 @@ logs quickly, so use it on rules you care about.
 ## Limits
 
 - Incoming traffic only (the input chain).
-- IPv4 source addresses only.
 - Logging is per rule. Packets dropped by the default policy are not logged.
 
 ## Be careful with apply
