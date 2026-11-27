@@ -26,3 +26,11 @@ def test_port_range_is_kept():
 def test_backwards_range_is_rejected():
     with pytest.raises(RuleError):
         check_rule({"action": "allow", "port": "9000-8000"}, 1)
+
+def test_log_must_be_true_or_false():
+    with pytest.raises(RuleError):
+        check_rule({"action": "deny", "log": "yes please"}, 1)
+
+
+def test_log_defaults_to_off():
+    assert check_rule({"action": "deny"}, 1)["log"] is False

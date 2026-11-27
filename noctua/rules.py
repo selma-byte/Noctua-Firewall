@@ -51,9 +51,14 @@ def check_rule(rule, number):
             raise RuleError(f"rule {number}: icmp has no ports")
         port = parse_port(port, number)
 
+    log = rule.get("log", False)
+    if not isinstance(log, bool):
+        raise RuleError(f"rule {number}: log must be true or false")
+
     return {
         "action": rule["action"],
         "protocol": proto,
         "port": port,
         "source": rule.get("source", "any"),
+        "log": log,
     }

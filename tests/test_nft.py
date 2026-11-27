@@ -22,3 +22,7 @@ def test_policy_is_drop():
 def test_port_range_text():
     rule = {"action": "allow", "protocol": "tcp", "port": "8000-8100", "source": "any"}
     assert rule_line(rule) == "tcp dport 8000-8100 accept"
+
+def test_log_goes_before_the_verdict():
+    rule = {"action": "deny", "protocol": "tcp", "port": 23, "source": "any", "log": True}
+    assert rule_line(rule) == 'tcp dport 23 log prefix "noctua: " drop'
